@@ -2,6 +2,10 @@ import os
 import gitlab
 import git
 from pathlib import Path
+import urllib3
+
+# Suppress only the InsecureRequestWarning from urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # Set up your GitLab access token and GitLab URL
 GITLAB_URL = 'https://gitlab.com'  # Replace with your GitLab instance URL
@@ -9,15 +13,15 @@ ACCESS_TOKEN = 'your_access_token_here'  # Replace with your GitLab access token
 GROUP_ID = 'your_group_id_here'  # Replace with the group ID you want to traverse
 BASE_DIR = 'gitlab_repos'  # Local directory to store the cloned repos
 
-# Initialize GitLab connection
-gl = gitlab.Gitlab(GITLAB_URL, private_token=ACCESS_TOKEN)
+# Initialize GitLab connection with SSL verification disabled
+gl = gitlab.Gitlab(GITLAB_URL, private_token=ACCESS_TOKEN, ssl_verify=False)
 
-# Function to clone a GitLab project to the local filesystem
+# Function to clone a GitLab project using SSH URL
 def clone_project(project, destination_dir):
     try:
-        # Clone the project repository into the destination directory
-        print(f'Cloning {project.name}...')
-        git.Repo.clone_from(project.http_url_to_repo, destination_dir)
+        # Clone the project repository using SSH into the destination directory
+        print(f'Cloning {project.name} via SSH...')
+        git.Repo.clone_from(project.ssh_url_to_repo, destination_dir)
         print(f'Cloned {project.name} successfully.')
     except Exception as e:
         print(f'Failed to clone {project.name}: {e}')
