@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka
+  template:
+    metadata:
+      labels:
+        app: kafka
+    spec:
+      containers:
+        - name: kafka
+          image: "{{ .Values.kafka.image }}"
+          ports:
+            - containerPort: {{ .Values.kafka.port }}
+            - containerPort: {{ .Values.kafka.zookeeperPort }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka
+spec:
+  ports:
+    - port: {{ .Values.kafka.port }}
+      targetPort: {{ .Values.kafka.port }}
+  selector:
+    app: kafka

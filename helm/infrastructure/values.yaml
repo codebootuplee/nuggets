@@ -1,0 +1,16 @@
+postgres:
+  image: "testcontainers/postgres:latest"
+  port: 5432
+
+mongo:
+  image: "testcontainers/mongo:latest"
+  port: 27017
+
+kafka:
+  image: "testcontainers/kafka:latest"
+  port: 9092
+  zookeeperPort: 2181  # Kafka requires Zookeeper
+
+rabbitmq:
+  image: "testcontainers/rabbitmq:latest"
+  port: 5672
