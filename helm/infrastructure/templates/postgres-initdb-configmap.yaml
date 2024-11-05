@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-initdb
+data:
+  init-schema.sql: |
+    CREATE SCHEMA IF NOT EXISTS my_schema;
