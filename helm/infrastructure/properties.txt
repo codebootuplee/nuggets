@@ -1,0 +1,18 @@
+# PostgreSQL configuration
+spring.datasource.url=jdbc:postgresql://postgres:5432/test
+spring.datasource.username=test
+spring.datasource.password=test
+
+# MongoDB configuration
+spring.data.mongodb.uri=mongodb://mongo:27017/test
+
+# Kafka configuration
+spring.kafka.bootstrap-servers=kafka:9092
+spring.kafka.consumer.group-id=test-group
+spring.kafka.template.default-topic=test-topic
+
+# RabbitMQ configuration
+spring.rabbitmq.host=rabbitmq
+spring.rabbitmq.port=5672
+spring.rabbitmq.username=guest
+spring.rabbitmq.password=guest
