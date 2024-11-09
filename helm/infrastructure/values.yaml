@@ -6,11 +6,21 @@ mongo:
   image: "testcontainers/mongo:latest"
   port: 27017
 
-kafka:
-  image: "testcontainers/kafka:latest"
-  port: 9092
-  zookeeperPort: 2181  # Kafka requires Zookeeper
-
 rabbitmq:
   image: "testcontainers/rabbitmq:latest"
   port: 5672
+
+zookeeper:
+  replicas: 1
+  image: confluentinc/cp-zookeeper:6.1.0
+  ports:
+    client: 2181
+
+kafka:
+  replicas: 1
+  image: confluentinc/cp-kafka:6.1.0
+  ports:
+    internal: 9092
+  zookeeperConnect: "zookeeper:2181"
+  offsetReplicationFactor: 1
+
