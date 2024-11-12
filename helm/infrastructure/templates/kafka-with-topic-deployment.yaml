@@ -56,3 +56,34 @@ lifecycle:
             sleep 5;
           done;
           kafka-topics.sh --create --topic test-topic --partitions 1 --replication-factor 1 --bootstrap-server localhost:{{ .Values.kafka.ports.internal }} || echo "Topic creation command failed or topic already exists.";
+
+
+#!/bin/bash
+
+# Check if the pod name is provided as an argument
+  if [ -z "$1" ]; then
+echo "Usage: $0 <kafka-pod-name>"
+  exit 1
+  fi
+  
+  POD_NAME=$1
+  TOPIC_NAME="test-topic"  # You can change this or make it an input parameter as well
+  PARTITIONS=1
+  REPLICATION_FACTOR=1
+  BOOTSTRAP_SERVER="localhost:9092"
+  
+  echo "Creating topic '$TOPIC_NAME' on pod '$POD_NAME'..."
+  
+  # Exec into the Kafka pod and create the topic
+  kubectl exec -it "$POD_NAME" -- /bin/bash -c "
+  kafka-broker-api-versions --bootstrap-server $BOOTSTRAP_SERVER > /dev/null 2>&1
+  while [ \$? -ne 0 ]; do
+  echo 'Waiting for Kafka to be ready...'
+  sleep 5
+  kafka-broker-api-versions --bootstrap-server $BOOTSTRAP_SERVER > /dev/null 2>&1
+  done
+  echo 'Kafka is ready! Creating topic...'
+  kafka-topics.sh --create --topic $TOPIC_NAME --partitions $PARTITIONS --replication-factor $REPLICATION_FACTOR --bootstrap-server $BOOTSTRAP_SERVER || echo 'Topic creation failed or topic already exists.'
+  "
+
+echo "Topic creation script completed."
