@@ -87,3 +87,37 @@ echo "Usage: $0 <kafka-pod-name>"
   "
 
 echo "Topic creation script completed."
+  
+  
+  @echo off
+  setlocal enabledelayedexpansion
+  
+  :: Check if the pod name is provided as an argument
+  if "%~1"=="" (
+echo Usage: %~nx0 ^<kafka-pod-name^>
+  exit /b 1
+  )
+  
+  set "POD_NAME=%~1"
+  set "TOPIC_NAME=test-topic"  :: Change this or accept as a parameter if needed
+  set "PARTITIONS=1"
+  set "REPLICATION_FACTOR=1"
+  set "BOOTSTRAP_SERVER=localhost:9092"
+  
+  echo Creating topic "%TOPIC_NAME%" on pod "%POD_NAME%"...
+  
+  :: Use PowerShell to run the kubectl exec command and check Kafka readiness
+  powershell -Command "
+  do {
+  echo 'Checking if Kafka is ready...';
+  kubectl exec -it %POD_NAME% -- /bin/bash -c 'kafka-broker-api-versions --bootstrap-server %BOOTSTRAP_SERVER% > /dev/null 2>&1';
+  if ($LASTEXITCODE -ne 0) {
+  echo 'Kafka is not ready. Retrying in 5 seconds...';
+  Start-Sleep -Seconds 5;
+  }
+} while ($LASTEXITCODE -ne 0);
+  echo 'Kafka is ready! Creating topic...';
+  kubectl exec -it %POD_NAME% -- /bin/bash -c 'kafka-topics.sh --create --topic %TOPIC_NAME% --partitions %PARTITIONS% --replication-factor %REPLICATION_FACTOR% --bootstrap-server %BOOTSTRAP_SERVER% || echo Topic creation failed or topic already exists.';
+  "
+  
+  echo Topic creation script completed.
