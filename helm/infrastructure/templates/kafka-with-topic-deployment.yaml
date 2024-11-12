@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka
+  template:
+    metadata:
+      labels:
+        app: kafka
+    spec:
+      containers:
+        - name: kafka
+          image: confluentinc/cp-kafka:6.1.0
+          ports:
+            - containerPort: 9092
+          env:
+            - name: KAFKA_ZOOKEEPER_CONNECT
+              value: "zookeeper:2181"  # Replace with your Zookeeper connect string
+            - name: KAFKA_ADVERTISED_LISTENERS
+              value: "PLAINTEXT://kafka:9092"
+            - name: KAFKA_BROKER_ID
+              value: "1"
+            - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
+              value: "1"  # Adjust based on your cluster setup
+          lifecycle:
+            postStart:
+              exec:
+                command:
+                  - "sh"
+                  - "-c"
+                  - >
+                    # Wait until Kafka is ready by checking the API version response
+                    kafka-broker-api-versions --bootstrap-server localhost:9092 > /dev/null 2>&1;
+                    while [ $? -ne 0 ]; do
+                      echo "Waiting for Kafka to be ready...";
+                      sleep 5;
+                      kafka-broker-api-versions --bootstrap-server localhost:9092 > /dev/null 2>&1;
+                    done;
+                    echo "Kafka is ready! Proceeding to create topics.";
+                    kafka-topics.sh --create --topic test-topic --partitions 1 --replication-factor 1 --bootstrap-server localhost:9092 || echo "Topic creation command failed or topic already exists.";
