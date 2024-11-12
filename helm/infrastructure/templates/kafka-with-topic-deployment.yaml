@@ -42,3 +42,17 @@ spec:
                     done;
                     echo "Kafka is ready! Proceeding to create topics.";
                     kafka-topics.sh --create --topic test-topic --partitions 1 --replication-factor 1 --bootstrap-server localhost:9092 || echo "Topic creation command failed or topic already exists.";
+
+
+lifecycle:
+  postStart:
+    exec:
+      command:
+        - "sh"
+        - "-c"
+        - >
+          while ! nc -z localhost {{ .Values.kafka.ports.internal }}; do
+            echo "Waiting for Kafka to start...";
+            sleep 5;
+          done;
+          kafka-topics.sh --create --topic test-topic --partitions 1 --replication-factor 1 --bootstrap-server localhost:{{ .Values.kafka.ports.internal }} || echo "Topic creation command failed or topic already exists.";
