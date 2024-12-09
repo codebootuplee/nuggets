@@ -26,7 +26,7 @@ def list_terminating_pods(namespace="default"):
     return terminating_pods
 
 def delete_pods(pod_names, namespace="default"):
-    """Delete the specified pods in the given namespace."""
+    """Forcefully delete the specified pods in the given namespace."""
     # Load the kubeconfig file
     config.load_kube_config()
 
@@ -35,8 +35,15 @@ def delete_pods(pod_names, namespace="default"):
 
     for pod_name in pod_names:
         try:
-            print(f"Deleting pod: {pod_name}")
-            v1.delete_namespaced_pod(pod_name, namespace)
+            print(f"Forcefully deleting pod: {pod_name}")
+            v1.delete_namespaced_pod(
+                name=pod_name,
+                namespace=namespace,
+                body=client.V1DeleteOptions(),  # Pass empty delete options
+                grace_period_seconds=0,
+                propagation_policy="Foreground",
+            )
+            print(f"Pod {pod_name} deleted.")
         except Exception as e:
             print(f"An error occurred while deleting pod {pod_name}: {e}")
 
@@ -52,10 +59,10 @@ def main():
     for pod_name in terminating_pods:
         print(f"- {pod_name}")
 
-    confirm = input("\nDo you want to delete these pods? (yes/no): ").strip().lower()
+    confirm = input("\nDo you want to force delete these pods? (yes/no): ").strip().lower()
     if confirm in ["yes", "y"]:
         delete_pods(terminating_pods, namespace_to_check)
-        print("Selected pods have been deleted.")
+        print("Selected pods have been forcefully deleted.")
     else:
         print("No pods were deleted.")
 
