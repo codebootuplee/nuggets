@@ -1,51 +1,38 @@
-from kubernetes import client, config
+import subprocess
+import json
 
 def list_terminating_pods(namespace="default"):
-    """List pods in Terminating state in the specified namespace."""
-    # Load the kubeconfig file
-    config.load_kube_config()
-
-    # Create the API client
-    v1 = client.CoreV1Api()
-
-    terminating_pods = []
+    """List pods in Terminating state using kubectl."""
     try:
-        # List all pods in the given namespace
-        pods = v1.list_namespaced_pod(namespace)
-        for pod in pods.items:
-            pod_name = pod.metadata.name
-            pod_status = pod.status.phase
-            pod_deletion_timestamp = pod.metadata.deletion_timestamp
+        # Run `kubectl get pods` and parse the output as JSON
+        cmd = ["kubectl", "get", "pods", "-n", namespace, "-o", "json"]
+        result = subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        pods = json.loads(result.stdout)
 
-            # Check if the pod is in Terminating state
-            if pod_status == "Running" and pod_deletion_timestamp:
+        terminating_pods = []
+        for pod in pods["items"]:
+            pod_name = pod["metadata"]["name"]
+            pod_phase = pod["status"]["phase"]
+            deletion_timestamp = pod["metadata"].get("deletionTimestamp")
+
+            # Identify Terminating pods
+            if pod_phase == "Running" and deletion_timestamp:
                 terminating_pods.append(pod_name)
-    except Exception as e:
-        print(f"An error occurred while listing pods: {e}")
 
-    return terminating_pods
+        return terminating_pods
+    except subprocess.CalledProcessError as e:
+        print(f"Error listing pods: {e.stderr}")
+        return []
 
-def delete_pods(pod_names, namespace="default"):
-    """Forcefully delete the specified pods in the given namespace."""
-    # Load the kubeconfig file
-    config.load_kube_config()
-
-    # Create the API client
-    v1 = client.CoreV1Api()
-
-    for pod_name in pod_names:
-        try:
-            print(f"Forcefully deleting pod: {pod_name}")
-            v1.delete_namespaced_pod(
-                name=pod_name,
-                namespace=namespace,
-                body=client.V1DeleteOptions(),  # Pass empty delete options
-                grace_period_seconds=0,
-                propagation_policy="Foreground",
-            )
-            print(f"Pod {pod_name} deleted.")
-        except Exception as e:
-            print(f"An error occurred while deleting pod {pod_name}: {e}")
+def force_delete_pod(pod_name, namespace="default"):
+    """Force delete a pod using kubectl."""
+    try:
+        print(f"Forcefully deleting pod: {pod_name}")
+        cmd = ["kubectl", "delete", "pod", pod_name, "-n", namespace, "--grace-period=0", "--force"]
+        subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        print(f"Pod {pod_name} deleted.")
+    except subprocess.CalledProcessError as e:
+        print(f"Error deleting pod {pod_name}: {e.stderr}")
 
 def main():
     namespace_to_check = input("Enter the namespace to check for Terminating pods (default: 'default'): ") or "default"
@@ -61,7 +48,8 @@ def main():
 
     confirm = input("\nDo you want to force delete these pods? (yes/no): ").strip().lower()
     if confirm in ["yes", "y"]:
-        delete_pods(terminating_pods, namespace_to_check)
+        for pod in terminating_pods:
+            force_delete_pod(pod, namespace_to_check)
         print("Selected pods have been forcefully deleted.")
     else:
         print("No pods were deleted.")
